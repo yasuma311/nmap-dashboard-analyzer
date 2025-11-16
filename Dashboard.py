@@ -15,7 +15,6 @@ from active_inventory_generator import parse_nmap_xml, get_cvss_rating_and_color
 from excel_exporter import create_report 
 
 # --- ESTILO QSS (CSS para Qt) para el TEMA OSCURO ---
-# --- ESTILO QSS (CSS para Qt) para el TEMA OSCURO ---
 DARK_THEME_QSS = """
     QWidget {
         background-color: #1e1e2f; /* Fondo principal oscuro */
@@ -659,4 +658,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = DashboardApp()
     window.show()
+
     sys.exit(app.exec())
