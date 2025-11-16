@@ -90,12 +90,15 @@ Este comando incluye todas las optimizaciones necesarias para aplicaciones de in
 ```bash
 pyinstaller --onefile --windowed --icon=C:\ruta\a\tu\icono\nmap-dashboard-analyzer\ico.ico Dashboard.py
 ```
-### 2. 📋 Resumen de las OpcionesOpciónPropósitopyinstallerHerramienta principal para el empaquetado.
+### 2. 📋 Resumen de las Opciones
 
---onefileGenera un único archivo Dashboard.exe en la carpeta dist/.
+| Opción | Propósito |
+| :--- | :--- |
+| `pyinstaller` | Herramienta principal para el empaquetado. |
+| `--onefile` | Genera un único archivo `Dashboard.exe` en la carpeta `dist/`. |
+| `--windowed` | Indica que la aplicación es de GUI, **evitando que se abra la ventana de consola** de fondo. |
+| `--icon=...` | Asigna tu archivo `.ico` al ejecutable para que tenga un icono personalizado. |
+| `Dashboard.py` | Tu script principal. |
 
---windowedIndica que la aplicación es de GUI, evitando que se abra la ventana de consola de fondo.
-
---icon=...Asigna tu archivo .ico al ejecutable para que tenga un icono personalizado.Dashboard.py
 
 ### 3. Ubicación del ArchivoDespués de ejecutar el comando, el archivo ejecutable final (Dashboard.exe) se encontrará dentro de la carpeta dist/ en el directorio de tu proyecto.
