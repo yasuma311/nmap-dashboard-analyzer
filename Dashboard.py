@@ -3,53 +3,48 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, 
     QWidget, QFileDialog, QTableWidget, QTableWidgetItem,
     QTextEdit, QSplitter, QHeaderView, QLabel, QFrame, QGridLayout,
-    QMessageBox, QAbstractItemView, QSlider, QComboBox
+    QMessageBox, QAbstractItemView, QSlider, QComboBox, QToolTip
 )
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QColor, QFont, QPalette # QPalette para solucionar selección
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QSize, QTimer, QMargins
+from PySide6.QtGui import QColor, QFont, QPalette, QCursor, QPainter
 
-# Importamos la nueva función principal de nuestro motor
+# --- IMPORTACIONES DE GRÁFICOS ---
+from PySide6.QtCharts import QChart, QChartView, QPieSeries, QPieSlice
+
+# Importamos nuestro motor y exportador
 from active_inventory_generator import parse_nmap_xml, get_cvss_rating_and_color
-# ¡Importamos el nuevo exportador!
 from excel_exporter import create_report 
 
-# --- ESTILO QSS (CSS para Qt) para el TEMA OSCURO ---
+# --- ESTILO QSS (CSS para Qt) ---
 DARK_THEME_QSS = """
     QWidget {
-        background-color: #1e1e2f; /* Fondo principal oscuro */
-        color: #d9d9e0; /* Texto principal claro */
+        background-color: #1e1e2f; 
+        color: #d9d9e0; 
         font-family: 'Segoe UI', Arial, sans-serif;
     }
     QMainWindow {
         background-color: #1e1e2f;
     }
-    /* Estilo de las "Tarjetas" del dashboard */
     QFrame#SummaryCard {
         background-color: #27293d;
         border-radius: 8px;
     }
-    /* Estilo del panel de detalles */
     QTextEdit {
         background-color: #27293d;
         border: 1px solid #3b3f5c;
         border-radius: 4px;
         font-size: 14px;
     }
-    /* Estilo de la Tabla */
     QTableWidget {
         background-color: #27293d;
         border: 1px solid #3b3f5c;
         gridline-color: #3b3f5c;
     }
-    
-    /* Estilo que el usuario dejó: Color sólido en selección */
     QTableWidget::item:selected {
-        background-color: #122085; /* Color sólido para la selección */
+        background-color: #122085; 
         color: #ffffff; 
         font-weight: bold;
     }
-    
     QHeaderView::section {
         background-color: #3b3f5c;
         color: #d9d9e0;
@@ -57,9 +52,8 @@ DARK_THEME_QSS = """
         border: none;
         font-weight: bold;
     }
-    /* Botón */
     QPushButton {
-        background-color: #5d5fef; /* Azul/Violeta */
+        background-color: #5d5fef; 
         color: white;
         font-weight: bold;
         border: none;
@@ -69,27 +63,23 @@ DARK_THEME_QSS = """
     QPushButton:hover {
         background-color: #7a7cff;
     }
-    /* NUEVO: Estilo para botones checkable (como los de puertos) cuando están ACTIVOS */
     QPushButton:checked {
-        background-color: #28a745; /* Verde fuerte (Indicador de filtro activo) */
+        background-color: #28a745; 
         border: 2px solid #28a745; 
     }
     QPushButton:checked:hover {
         background-color: #38c755;
     }
-    /* Etiquetas de Título (ej. "Scanned Assets") */
     QLabel#CardTitle {
         font-size: 14px;
         font-weight: bold;
-        color: #a0a0b8; /* Color de texto secundario */
+        color: #a0a0b8; 
     }
-    /* Etiquetas de Valor (ej. "100") */
     QLabel#CardValue {
         font-size: 32px;
         font-weight: bold;
         color: #ffffff;
     }
-    /* Etiquetas de Criticidad */
     QLabel#CveLabel {
         color: white;
         font-weight: bold;
@@ -97,7 +87,6 @@ DARK_THEME_QSS = """
         border-radius: 4px;
         font-size: 13px;
     }
-    /* Estilo del Slider CVSS */
     QSlider::groove:horizontal {
         height: 8px;
         background: #3b3f5c;
@@ -116,7 +105,6 @@ DARK_THEME_QSS = """
         background: #7a7cff;
         border-radius: 4px;
     }
-    /* Estilo del ComboBox de Servicios */
     QComboBox {
         background-color: #27293d;
         border: 1px solid #3b3f5c;
@@ -125,32 +113,23 @@ DARK_THEME_QSS = """
     }
 """
 
-# --- ¡NUEVA CLASE PARA ORDENAR NÚMEROS! ---
 class NumericTableWidgetItem(QTableWidgetItem):
-    """
-    Un QTableWidgetItem personalizado que se ordena numéricamente
-    en lugar de alfabéticamente.
-    """
     def __lt__(self, other):
         try:
             return float(self.text()) < float(other.text())
         except (ValueError, TypeError):
             return super().__lt__(other)
 
-# --- FIN DE LA NUEVA CLASE ---
-
-
 class DashboardApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Nmap Dashboard Analyzer")
+        self.setWindowTitle("Dashboard de Inventario Nmap")
         self.setGeometry(100, 100, 1400, 900)
         self.hosts_data = []
         self.current_xml_path = None 
         self.original_headers = ["IP", "Sistema Operativo", "Criticidad"]
-        self.unique_services = [] # Lista de servicios únicos para el filtro
+        self.unique_services = set()
         
-        # QTimer para retrasar el filtro de CVSS (mejor rendimiento)
         self.filter_timer = QTimer(self)
         self.filter_timer.setSingleShot(True)
         self.filter_timer.timeout.connect(self.apply_filters)
@@ -162,7 +141,7 @@ class DashboardApp(QMainWindow):
         main_layout = QVBoxLayout(main_widget)
         main_layout.setSpacing(15)
 
-        # 1. Panel de Botones (Superior)
+        # 1. Botones
         button_container = QWidget()
         button_layout = QHBoxLayout(button_container)
         button_layout.setContentsMargins(0, 0, 0, 0)
@@ -181,7 +160,7 @@ class DashboardApp(QMainWindow):
         button_layout.addStretch() 
         main_layout.addWidget(button_container)
 
-        # 2. Panel de Resumen (Las Tarjetas) y Filtrado
+        # 2. Panel Superior (Resumen)
         summary_panel = self._create_summary_panel()
         main_layout.addWidget(summary_panel)
 
@@ -190,164 +169,207 @@ class DashboardApp(QMainWindow):
         main_layout.addWidget(main_panel, 1)
 
     def _create_summary_panel(self):
-        """Crea el widget superior con las tarjetas de estadísticas y los filtros."""
         container = QWidget()
-        layout = QGridLayout(container)
-        layout.setSpacing(15)
+        layout = QVBoxLayout(container) 
+        layout.setSpacing(10) 
+        layout.setContentsMargins(5, 5, 5, 5)
 
-        self.nmap_command_label = QLabel("Nmap command will appear here...")
-        self.nmap_command_label.setStyleSheet("color: #a0a0b8; font-family: 'Courier New', monospace; font-size: 13px;")
+        # --- FILA 0: COMANDO ---
+        self.nmap_command_label = QLabel("Nmap command...")
+        self.nmap_command_label.setStyleSheet("color: #a0a0b8; font-family: 'Courier New'; font-size: 12px;")
         self.nmap_command_label.setWordWrap(True)
-        layout.addWidget(self.nmap_command_label, 0, 0, 1, 6) 
+        layout.addWidget(self.nmap_command_label)
 
-        # --- Fila 1: Tarjetas de Resumen ---
+        # --- FILA 1: DATA ROW (Métricas + CVEs + Gráfico) ---
+        data_row = QHBoxLayout()
+        data_row.setSpacing(20)
+
+        # [COLUMNA IZQUIERDA] Contiene: Fila de Métricas y debajo Fila de CVEs
+        left_column = QVBoxLayout()
+        left_column.setSpacing(15)
+
+        # 1.1 Fila de Métricas (Assets, Services, Ports)
+        metrics_row = QHBoxLayout()
+        metrics_row.setSpacing(10)
+        
         self.scanned_assets_label = QLabel("0")
-        card_assets = self._create_card("Scanned Assets", self.scanned_assets_label)
-        layout.addWidget(card_assets, 1, 0) 
-
-        self.os_families_label = QLabel("-")
-        self.os_families_label.setObjectName("CardValue")
-        self.os_families_label.setStyleSheet("font-size: 16px; font-weight: normal; margin-top: 5px;")
-        card_os = self._create_card("OS Families", self.os_families_label)
-        layout.addWidget(card_os, 1, 1)
+        card_assets = self._create_card("Assets", self.scanned_assets_label)
+        metrics_row.addWidget(card_assets)
 
         self.services_label = QLabel("0")
         card_services = self._create_card("Services", self.services_label)
-        layout.addWidget(card_services, 1, 2)
+        metrics_row.addWidget(card_services)
 
         self.ports_label = QLabel("0")
         card_ports = self._create_card("Ports", self.ports_label)
-        layout.addWidget(card_ports, 1, 3)
+        metrics_row.addWidget(card_ports)
+        
+        left_column.addLayout(metrics_row)
 
-        cve_widget = QWidget()
-        cve_layout = QHBoxLayout(cve_widget)
-        cve_layout.setContentsMargins(0, 0, 0, 0)
-        cve_layout.setSpacing(10)
+        # 1.2 Fila de CVEs (Horizontal debajo de las métricas)
+        cves_row = QHBoxLayout()
+        cves_row.setSpacing(10)
         
         self.cve_critical_label = QLabel("Critical 0")
         self.cve_critical_label.setObjectName("CveLabel")
-        self.cve_critical_label.setStyleSheet("background-color: #d9534f;")
+        self.cve_critical_label.setStyleSheet("background-color: #d9534f; font-size: 12px;")
+        self.cve_critical_label.setAlignment(Qt.AlignCenter)
+        self.cve_critical_label.setFixedHeight(40) 
         
         self.cve_high_label = QLabel("High 0")
         self.cve_high_label.setObjectName("CveLabel")
-        self.cve_high_label.setStyleSheet("background-color: #f0ad4e;")
+        self.cve_high_label.setStyleSheet("background-color: #f0ad4e; font-size: 12px;")
+        self.cve_high_label.setAlignment(Qt.AlignCenter)
+        self.cve_high_label.setFixedHeight(40)
         
         self.cve_medium_label = QLabel("Medium 0")
         self.cve_medium_label.setObjectName("CveLabel")
-        self.cve_medium_label.setStyleSheet("background-color: #b66dff;") 
+        self.cve_medium_label.setStyleSheet("background-color: #b66dff; font-size: 12px;")
+        self.cve_medium_label.setAlignment(Qt.AlignCenter)
+        self.cve_medium_label.setFixedHeight(40)
         
         self.cve_low_label = QLabel("Low 0")
         self.cve_low_label.setObjectName("CveLabel")
-        self.cve_low_label.setStyleSheet("background-color: #777777;") 
+        self.cve_low_label.setStyleSheet("background-color: #777777; font-size: 12px;")
+        self.cve_low_label.setAlignment(Qt.AlignCenter)
+        self.cve_low_label.setFixedHeight(40)
 
-        cve_layout.addWidget(self.cve_critical_label)
-        cve_layout.addWidget(self.cve_high_label)
-        cve_layout.addWidget(self.cve_medium_label)
-        cve_layout.addWidget(self.cve_low_label)
+        cves_row.addWidget(self.cve_critical_label, 1)
+        cves_row.addWidget(self.cve_high_label, 1)
+        cves_row.addWidget(self.cve_medium_label, 1)
+        cves_row.addWidget(self.cve_low_label, 1)
 
-        card_cves = self._create_card("Detected CVEs", cve_widget)
-        layout.addWidget(card_cves, 1, 4, 1, 2)
-
-        # --- Fila 2: Controles de Filtrado (CVSS y Servicio) ---
+        cve_container = QFrame()
+        cve_container.setObjectName("SummaryCard")
+        cve_container_layout = QVBoxLayout(cve_container)
+        cve_container_layout.setContentsMargins(10, 10, 10, 10)
         
-        # 1. Filtro CVSS
-        cvss_filter_widget = QWidget()
-        cvss_filter_layout = QVBoxLayout(cvss_filter_widget)
-        cvss_filter_layout.setContentsMargins(0, 0, 0, 0)
+        lbl_cve_title = QLabel("Detected Vulnerabilities")
+        lbl_cve_title.setStyleSheet("color: #a0a0b8; font-size: 11px; font-weight: bold;")
+        cve_container_layout.addWidget(lbl_cve_title)
+        cve_container_layout.addLayout(cves_row)
         
-        self.cvss_label = QLabel("CVSS Mínimo: 0.0")
+        left_column.addWidget(cve_container)
+        data_row.addLayout(left_column, 4) 
+
+        # [COLUMNA DERECHA] GRÁFICO DE TARTA
+        chart_container = QWidget()
+        chart_layout = QVBoxLayout(chart_container)
+        chart_layout.setContentsMargins(0, 0, 0, 0)
+        
+        title_os = QLabel("OS Families")
+        title_os.setStyleSheet("font-weight: bold; color: #a0a0b8; font-size: 14px;")
+        title_os.setAlignment(Qt.AlignCenter)
+        chart_layout.addWidget(title_os)
+
+        self.os_pie_series = QPieSeries()
+        self.os_pie_series.hovered.connect(self.on_pie_slice_hovered)
+        
+        self.chart = QChart()
+        self.chart.addSeries(self.os_pie_series)
+        
+        # --- ¡CAMBIO! LEYENDA ACTIVADA ---
+        self.chart.legend().setVisible(True)
+        self.chart.legend().setAlignment(Qt.AlignRight)
+        self.chart.legend().setLabelColor(QColor("#d9d9e0"))
+        self.chart.legend().setFont(QFont("Segoe UI", 9))
+        self.chart.legend().setBackgroundVisible(False)
+        # ---------------------------------
+
+        self.chart.setBackgroundRoundness(0)
+        self.chart.setMargins(QMargins(0, 0, 0, 0))
+        self.chart.layout().setContentsMargins(0, 0, 0, 0)
+        self.chart.setBackgroundBrush(Qt.NoBrush)
+
+        self.chart_view = QChartView(self.chart)
+        self.chart_view.setRenderHint(QPainter.Antialiasing)
+        self.chart_view.setStyleSheet("background: transparent;")
+        self.chart_view.setMinimumHeight(180) 
+        
+        chart_layout.addWidget(self.chart_view)
+        
+        data_row.addWidget(chart_container, 5) 
+
+        layout.addLayout(data_row)
+
+        # --- FILA 2: FILTROS ---
+        filters_layout = QHBoxLayout()
+        
+        self.cvss_label = QLabel("CVSS > 0.0")
+        self.cvss_label.setStyleSheet("font-weight: bold; color: #a0a0b8; margin-right: 5px;")
         self.cvss_slider = QSlider(Qt.Horizontal)
-        self.cvss_slider.setRange(0, 100) # De 0.0 a 10.0 con una precisión
-        self.cvss_slider.setValue(0)
-        self.cvss_slider.setSingleStep(1)
-        self.cvss_slider.setTickPosition(QSlider.TicksBelow)
-        self.cvss_slider.setTickInterval(10) # Marca cada 1.0 (10 ticks)
-        
+        self.cvss_slider.setRange(0, 100)
+        self.cvss_slider.setFixedWidth(150) 
         self.cvss_slider.valueChanged.connect(self._update_cvss_label)
-        self.cvss_slider.sliderReleased.connect(self.filter_timer.start) 
+        self.cvss_slider.sliderReleased.connect(self.filter_timer.start)
         
-        cvss_filter_layout.addWidget(self.cvss_label)
-        cvss_filter_layout.addWidget(self.cvss_slider)
+        filters_layout.addWidget(self.cvss_label)
+        filters_layout.addWidget(self.cvss_slider)
+        filters_layout.addSpacing(20)
 
-        layout.addWidget(cvss_filter_widget, 2, 0, 1, 3) # Ocupa 3 columnas
-
-        # 2. Filtro de Servicios
-        service_filter_widget = QWidget()
-        service_filter_layout = QVBoxLayout(service_filter_widget)
-        service_filter_layout.setContentsMargins(0, 0, 0, 0)
-        
-        service_filter_layout.addWidget(QLabel("Filtrar por Nombre de Servicio:"))
+        filters_layout.addWidget(QLabel("Servicio:"))
         self.service_combo = QComboBox()
-        self.service_combo.addItem("Mostrar Todos los Servicios")
-        self.service_combo.setMinimumWidth(200)
-        
+        self.service_combo.addItem("Todos")
+        self.service_combo.setMinimumWidth(150)
         self.service_combo.currentTextChanged.connect(self.apply_filters)
+        filters_layout.addWidget(self.service_combo)
+        filters_layout.addStretch() 
         
-        service_filter_layout.addWidget(self.service_combo)
-        service_filter_layout.addStretch()
-
-        layout.addWidget(service_filter_widget, 2, 3, 1, 3) # Ocupa 3 columnas restantes
-        
-        # --- Fila 3: Botones de Puertos Comunes Explotables ---
-        port_filter_widget = QWidget()
-        port_filter_layout = QHBoxLayout(port_filter_widget)
-        port_filter_layout.setContentsMargins(0, 0, 0, 0)
-        port_filter_layout.addWidget(QLabel("Puertos Comunes:"))
-        
-        # Definimos los puertos de interés y creamos los botones
+        filters_layout.addWidget(QLabel("Puertos:"))
         self.common_ports = {
-            "SMB": [139, 445],      # EternalBlue, etc.
-            "RDP": [3389],          # Acceso remoto
-            "DB": [1433, 3306, 5432], # MSSQL, MySQL, PostgreSQL
-            "SSH/TELNET": [22, 23], # Credenciales débiles
+            "SMB": [139, 445], "RDP": [3389], "DB": [1433, 3306, 5432],
+            "SSH": [22, 23], "WEB": [80, 443]
         }
-        self.port_buttons = {} # Diccionario para guardar referencias a los botones
-        
+        self.port_buttons = {}
         for name, ports in self.common_ports.items():
-            btn = QPushButton(f"{name} ({'/'.join(map(str, ports))})")
+            btn = QPushButton(name)
             btn.setCheckable(True)
+            btn.setToolTip(f"Puertos: {', '.join(map(str, ports))}")
+            btn.setFixedWidth(60) 
             btn.clicked.connect(self.apply_filters)
             self.port_buttons[name] = btn
-            port_filter_layout.addWidget(btn)
-            
-        port_filter_layout.addStretch()
-        
-        layout.addWidget(port_filter_widget, 3, 0, 1, 6) # Fila 3, ocupa todo el ancho
+            filters_layout.addWidget(btn)
 
-        # Ajustamos las filas 
-        layout.setRowStretch(1, 1)
+        layout.addLayout(filters_layout)
 
         return container
 
+    def on_pie_slice_hovered(self, slice, state):
+        if state:
+            slice.setExploded(True)
+            # Solo tooltip, sin etiqueta sobre el queso
+            info_text = f"{int(slice.value())} {slice.label()}"
+            QToolTip.showText(QCursor.pos(), info_text)
+        else:
+            slice.setExploded(False)
+            slice.setLabelVisible(False)
+            QToolTip.hideText()
+
     def _update_cvss_label(self, value):
-        """Actualiza la etiqueta CVSS a partir del valor del deslizador (0-100)."""
         cvss_value = value / 10.0
-        self.cvss_label.setText(f"CVSS Mínimo: {cvss_value:.1f}")
-        
+        self.cvss_label.setText(f"CVSS > {cvss_value:.1f}")
+
     def _create_card(self, title_text, value_widget):
-        """Función de ayuda para crear una "tarjeta" de resumen."""
         card = QFrame()
         card.setObjectName("SummaryCard")
-        card.setMinimumHeight(120)
         
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(15, 15, 15, 15)
         
         title_label = QLabel(title_text)
         title_label.setObjectName("CardTitle")
+        title_label.setAlignment(Qt.AlignCenter)
         
         if isinstance(value_widget, QLabel):
             value_widget.setObjectName("CardValue")
+            value_widget.setAlignment(Qt.AlignCenter)
         
         card_layout.addWidget(title_label)
-        card_layout.addSpacing(10)
         card_layout.addWidget(value_widget)
-        card_layout.addStretch() 
         
         return card
 
     def _create_main_panel(self):
-        """Crea el panel inferior (tabla y detalles)."""
         splitter = QSplitter(Qt.Horizontal)
 
         left_panel = QWidget()
@@ -356,7 +378,6 @@ class DashboardApp(QMainWindow):
         
         self.hosts_table = QTableWidget()
         self.hosts_table.setColumnCount(3)
-        
         self.reset_header_labels()
         
         self.hosts_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
@@ -368,8 +389,13 @@ class DashboardApp(QMainWindow):
         
         self.hosts_table.setSortingEnabled(True)
         self.hosts_table.horizontalHeader().sortIndicatorChanged.connect(self.update_header_labels)
-        
         self.hosts_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+
+        # Anular color de selección azul
+        palette = self.hosts_table.palette()
+        palette.setColor(QPalette.Highlight, QColor(0, 0, 0, 0)) 
+        palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
+        self.hosts_table.setPalette(palette)
 
         left_layout.addWidget(self.hosts_table)
         splitter.addWidget(left_panel)
@@ -389,24 +415,22 @@ class DashboardApp(QMainWindow):
         return splitter
 
     def reset_header_labels(self):
-        """Pone las cabeceras en su estado inicial (con flecha ▶️)"""
         labels_with_arrow = [f"{text} ▶️" for text in self.original_headers]
         self.hosts_table.setHorizontalHeaderLabels(labels_with_arrow)
 
     def update_header_labels(self, column_index, order):
-        """Actualiza las flechas de las cabeceras según el orden."""
         for i, text in enumerate(self.original_headers):
             item = self.hosts_table.horizontalHeaderItem(i)
             if item is None:
                 item = QTableWidgetItem()
                 self.hosts_table.setHorizontalHeaderItem(i, item)
 
-            arrow = " ▶️" # Flecha por defecto
+            arrow = " ▶️"
             if i == column_index:
                 arrow = " 🔼" if order == Qt.AscendingOrder else " 🔽"
             
             item.setText(text + arrow)
-            
+
     def load_xml_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Abrir XML", "", "Archivos XML (*.xml)")
         if file_path:
@@ -414,12 +438,12 @@ class DashboardApp(QMainWindow):
             self.parse_and_load_data(file_path)
 
     def parse_and_load_data(self, xml_file):
-        
         self.hosts_table.setSortingEnabled(False)
         self.hosts_data = []
         self.unique_services = set()
         self.hosts_table.setRowCount(0)
         self.reset_header_labels() 
+        self.os_pie_series.clear() 
 
         try:
             summary_data, hosts_list = parse_nmap_xml(xml_file)
@@ -430,37 +454,46 @@ class DashboardApp(QMainWindow):
             self.services_label.setText(str(summary_data['services']))
             self.ports_label.setText(str(summary_data['ports']))
 
-            # Formateo de OS Families (conteo a la izquierda)
-            os_str = "\n".join([f"- {count}: {os}" for os, count in summary_data['os_families'].items()])
-            if not os_str: os_str = "-"
-            self.os_families_label.setText(os_str)
+            # --- LLENAR GRÁFICO DE TARTA ---
+            os_families = summary_data.get('os_families', {})
+            colors = [
+                "#5d5fef", "#f0ad4e", "#d9534f", "#b66dff", "#5bc0de", 
+                "#5cb85c", "#f7f7f7", "#e83e8c", "#fd7e14", "#20c997"
+            ]
             
-            # Cargar servicios únicos y CVSS
+            if os_families:
+                sorted_os = sorted(os_families.items(), key=lambda x: x[1], reverse=True)
+                for i, (os_name, count) in enumerate(sorted_os):
+                    _slice = self.os_pie_series.append(os_name, count)
+                    _slice.setColor(QColor(colors[i % len(colors)]))
+                    _slice.setLabelVisible(False) 
+            else:
+                _slice = self.os_pie_series.append("Sin Datos", 1)
+                _slice.setColor(QColor("#777777"))
+            # --------------------------------
+
+            # Recolectar servicios únicos
             for host in self.hosts_data:
-                for _, service in host['ports']:
-                    if service:
-                        self.unique_services.add(service)
+                if host['ports']:
+                    for _, service_name, _, _ in host['ports']:
+                        self.unique_services.add(service_name)
             
-            # Limpiar y rellenar el ComboBox
-            self.service_combo.blockSignals(True) # Bloquear señal para evitar filtro prematuro
+            self.service_combo.blockSignals(True)
             self.service_combo.clear()
-            self.service_combo.addItem("Mostrar Todos los Servicios")
-            sorted_services = sorted(list(self.unique_services))
-            self.service_combo.addItems(sorted_services)
+            self.service_combo.addItem("Todos") 
+            self.service_combo.addItems(sorted(list(self.unique_services)))
             self.service_combo.blockSignals(False)
 
-            # Cargar tarjetas de CVE
             cve_counts = summary_data['cve_counts']
             self.cve_critical_label.setText(f"Critical {cve_counts['Critical']}")
             self.cve_high_label.setText(f"High {cve_counts['High']}")
             self.cve_medium_label.setText(f"Medium {cve_counts['Medium']}")
             self.cve_low_label.setText(f"Low {cve_counts['Low']}")
-            
-            # Cargar la tabla
+
             self.load_table_data(self.hosts_data)
             
             self.export_button.setEnabled(True)
-            self.details_text.setText("Datos cargados. Usa los filtros para refinar la búsqueda.")
+            self.details_text.setText("Datos cargados. Selecciona un host para ver detalles.")
 
         except Exception as e:
             self.hosts_data = [] 
@@ -474,22 +507,18 @@ class DashboardApp(QMainWindow):
         self.hosts_table.setSortingEnabled(True)
 
     def load_table_data(self, data_list):
-        """Rellena la tabla con la lista de datos dada (filtrados o completos)."""
         self.hosts_table.setSortingEnabled(False)
         self.hosts_table.setRowCount(len(data_list))
         
         for i, host_info in enumerate(data_list):
             ip_item = QTableWidgetItem(host_info['ip'])
-            
-            # Guardamos el índice original en el dato (útil para el filtro)
             ip_item.setData(Qt.UserRole, self.hosts_data.index(host_info)) 
             
             os_item = QTableWidgetItem(host_info['os'])
-            
             cvss_item = NumericTableWidgetItem(str(host_info['max_cvss']))
             
             rating, (r, g, b) = get_cvss_rating_and_color(host_info['max_cvss'])
-            row_color = QColor(r, g, b, 100) # Fondo con baja opacidad
+            row_color = QColor(r, g, b, 100)
             
             for item in (ip_item, os_item, cvss_item):
                 item.setBackground(row_color)
@@ -501,15 +530,12 @@ class DashboardApp(QMainWindow):
         self.hosts_table.setSortingEnabled(True)
 
     def apply_filters(self):
-        """Aplica los filtros de CVSS, Servicio y Puertos Comunes a los datos cargados."""
         if not self.hosts_data:
             return
 
-        # 1. Obtener los valores del filtro
         min_cvss = self.cvss_slider.value() / 10.0
         selected_service = self.service_combo.currentText()
         
-        # Obtener puertos de botones presionados
         active_ports = []
         active_port_names = []
         for name, btn in self.port_buttons.items():
@@ -517,37 +543,29 @@ class DashboardApp(QMainWindow):
                 active_ports.extend(self.common_ports[name])
                 active_port_names.append(name)
         
-        # 2. Inicializar la lista de hosts filtrados
         filtered_hosts = []
 
-        # 3. Recorrer la lista de hosts para aplicar la lógica
         for host in self.hosts_data:
             cvss_pass = True
             service_pass = True
             port_pass = True 
 
-            # --- Lógica de Filtro CVSS ---
             if float(host['max_cvss']) < min_cvss:
                 cvss_pass = False
 
-            # --- Lógica de Filtro de Servicio (por nombre) ---
-            if selected_service != "Mostrar Todos los Servicios":
+            if selected_service != "Todos":
                 service_pass = False 
-                for _, service in host['ports']:
-                    if service == selected_service:
+                for _, service_name, _, _ in host['ports']:
+                    if service_name == selected_service:
                         service_pass = True
                         break
 
-            # --- Lógica de Filtro de Puertos Comunes (por número) ---
             if active_ports: 
                 port_pass = False 
-                
-                # CORRECCIÓN IMPORTANTE: Convertimos los puertos del host a enteros 
-                # para que coincida con los enteros de active_ports (ej. 22, 445).
+                host_ports = []
                 try:
-                    host_ports = [int(p) for p, s in host['ports']] 
+                    host_ports = [int(p[0]) for p in host['ports']] 
                 except ValueError:
-                    # En un escenario real, esto no debería pasar si p es portid
                     host_ports = [] 
                 
                 for required_port in active_ports:
@@ -555,20 +573,17 @@ class DashboardApp(QMainWindow):
                         port_pass = True
                         break 
 
-            # 4. Si el host pasa TODOS los filtros (AND), lo añadimos a la lista
             if cvss_pass and service_pass and port_pass: 
                 filtered_hosts.append(host)
 
-        # 5. Cargar los datos filtrados en la tabla y actualizar detalles
         self.load_table_data(filtered_hosts)
         
         details_text = f"Filtrado aplicado:\n"
         details_text += f"- CVSS Mínimo: {min_cvss:.1f}\n"
-        details_text += f"- Servicio por Nombre: {selected_service}\n"
-        details_text += f"- Puertos Comunes Activos: {', '.join(active_port_names) if active_port_names else 'Ninguno'}\n"
+        details_text += f"- Servicio: {selected_service}\n"
+        details_text += f"- Puertos Activos: {', '.join(active_port_names) if active_port_names else 'Ninguno'}\n"
         details_text += f"\nMostrando {len(filtered_hosts)} de {len(self.hosts_data)} hosts."
         self.details_text.setText(details_text)
-
 
     def show_host_details(self, row, column):
         ip_item = self.hosts_table.item(row, 0)
@@ -576,8 +591,7 @@ class DashboardApp(QMainWindow):
             return
         
         try:
-            # Usamos el dato guardado para obtener el índice original, incluso si la tabla está filtrada
-            original_index = ip_item.data(Qt.UserRole) 
+            original_index = ip_item.data(Qt.UserRole)
             host_info = self.hosts_data[original_index]
         except Exception as e:
             print(f"Error al obtener detalles del host: {e}")
@@ -590,8 +604,16 @@ class DashboardApp(QMainWindow):
         
         details_str += "\n--- Puertos y Servicios ---\n"
         if host_info['ports']:
-            for port, service in host_info['ports']:
-                details_str += f"   - Puerto: {port:<5} Servicio: {service}\n"
+            for port_id, service, product, version in host_info['ports']:
+                service_detail = service
+                if product:
+                    service_detail += f" ({product}"
+                    if version:
+                        service_detail += f" {version})"
+                    else:
+                        service_detail += ")"
+                        
+                details_str += f"   - Puerto: {port_id:<5} Servicio: {service_detail}\n"
         else:
             details_str += "   (No hay puertos abiertos detectados)\n"
             
@@ -623,7 +645,6 @@ class DashboardApp(QMainWindow):
         self.details_text.setText(details_str)
 
     def export_to_excel(self):
-        # ... (función de exportación sin cambios) ...
         if not self.hosts_data:
             QMessageBox.warning(self, "Sin datos", "No hay datos cargados para exportar.")
             return
@@ -652,11 +673,8 @@ class DashboardApp(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Error de Exportación", f"No se pudo guardar el archivo Excel:\n\n{e}")
 
-
-# --- El código para arrancar la aplicación ---
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = DashboardApp()
     window.show()
-
     sys.exit(app.exec())
